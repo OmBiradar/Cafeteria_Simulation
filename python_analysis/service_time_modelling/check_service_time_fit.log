@@ -1,0 +1,15 @@
+Saved distribution plot to 'distribution_checks.png'
+
+--- Parameter Estimation (Log-Transformed Data) ---
+Sample Mean (μ): 4.9280
+Sample Variance (σ²): 0.2338
+Sample Standard Deviation (σ): 0.4836
+
+--- Goodness-of-Fit Test (Kolmogorov-Smirnov) ---
+K-S Statistic (D): 0.0840
+P-value: 0.4566
+
+Significance Level (α): 0.05
+Verdict: We CANNOT reject the null hypothesis.
+Conclusion: The log-transformed data appears to follow a normal distribution.
+Final Confirmation: Therefore, the original service times follow a Log-Normal distribution.
