@@ -1,0 +1,50 @@
+---
+config_1:
+  name: "Standard Daytime Mix"
+  description: "Typical split between solo studiers, pairs, and occasional small groups."
+  probability_distribution:
+    - 1 : 0.35
+    - 2 : 0.35
+    - 3 : 0.15
+    - 4 : 0.10
+    - 5 : 0.05
+
+config_2:
+  name: "Finals Week / Solo Heavy"
+  description: "Highly skewed towards individuals grinding alone, with a few study pairs."
+  probability_distribution:
+    - 1 : 0.60
+    - 2 : 0.25
+    - 3 : 0.10
+    - 4 : 0.04
+    - 5 : 0.01
+  
+config_3:
+  name: "Lunch Rush Social"
+  description: "Fewer solo students; a balanced mix of pairs and mid-sized social groups catching up."
+  probability_distribution:
+    - 1 : 0.10
+    - 2 : 0.30
+    - 3 : 0.30
+    - 4 : 0.20
+    - 5 : 0.10
+
+config_4:
+  name: "Post-Class Project Groups"
+  description: "Skewed towards groups of 3 to 4 working on team assignments or clustering after a lecture."
+  probability_distribution:
+    - 1 : 0.10
+    - 2 : 0.20
+    - 3 : 0.30
+    - 4 : 0.30
+    - 5 : 0.10
+
+config_5:
+  name: "Pair Heavy / Date Night"
+  description: "Dominated by groups of two (couples, tutoring sessions, or one-on-one meetings)."
+  probability_distribution:
+    - 1 : 0.15
+    - 2 : 0.60
+    - 3 : 0.15
+    - 4 : 0.05
+    - 5 : 0.05
