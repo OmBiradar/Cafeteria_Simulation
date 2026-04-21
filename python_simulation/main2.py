@@ -763,7 +763,7 @@ if __name__ == "__main__":
     tracker = BatchSimulationTracker(profit_percentage=0.20)
 
     for human_servers in range(1, 3):
-        for kiosk_servers in range(1, 4):
+        for kiosk_servers in range(0, 4):
 
             for config_no in range(1, 6):
                 config_name = f"config_{config_no}"
