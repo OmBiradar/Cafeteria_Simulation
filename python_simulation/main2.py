@@ -419,7 +419,82 @@ class CafeteriaSimulation:
                     }
                 )
 
+        with open(os.path.join(output_dir, "footprint.csv"), "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["time_band", "group_id", "size"])
+            writer.writeheader()
+            writer.writerows(self.footprint_data)
+
+        with open(os.path.join(output_dir, "queue_length.csv"), "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["time", "length"])
+            writer.writeheader()
+            writer.writerows(self.queue_length_data)
+
+        with open(os.path.join(output_dir, "arrivals.csv"), "w", newline="") as f:
+            writer = csv.DictWriter(
+                f, fieldnames=["time_band", "no_of_people", "no_of_groups"]
+            )
+            writer.writeheader()
+            writer.writerows(self.arrivals_summary_data)
+
+        with open(
+            os.path.join(output_dir, "group_size_distribution.csv"), "w", newline=""
+        ) as f:
+            writer = csv.DictWriter(f, fieldnames=["size", "count"])
+            writer.writeheader()
+            for size in sorted(size_counts.keys()):
+                writer.writerow({"size": size, "count": size_counts[size]})
+
+        with open(os.path.join(output_dir, "server_stats.csv"), "w", newline="") as f:
+            writer = csv.DictWriter(
+                f, fieldnames=["server_id", "groups_served", "customers_served"]
+            )
+            writer.writeheader()
+            for sid, stats in self.server_stats.items():
+                writer.writerow(
+                    {
+                        "server_id": sid,
+                        "groups_served": stats["groups_served"],
+                        "customers_served": stats["customers_served"],
+                    }
+                )
+
+        # Output isolated service times per counter
+        for sid, data_list in self.service_times_data.items():
+            if (
+                data_list
+            ):  # Only generate files for counters that actually served someone
+                file_path = os.path.join(output_dir, f"service_times_{sid}.csv")
+                with open(file_path, "w", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=["group_id", "service_time"])
+                    writer.writeheader()
+                    writer.writerows(sorted(data_list, key=lambda x: x["group_id"]))
+
+        with open(os.path.join(output_dir, "in_queue_times.csv"), "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["arrival_time", "in_queue_time"])
+            writer.writeheader()
+            for d in sorted(
+                self.customer_data, key=lambda x: hhmmss_to_seconds(x["arrival_time"])
+            ):
+                writer.writerow(
+                    {
+                        "arrival_time": d["arrival_time"],
+                        "in_queue_time": d["in_queue_time"],
+                    }
+                )
+
+        with open(os.path.join(output_dir, "wait_times.csv"), "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["arrival_time", "wait_time"])
+            writer.writeheader()
+            for d in sorted(
+                self.customer_data, key=lambda x: hhmmss_to_seconds(x["arrival_time"])
+            ):
+                writer.writerow(
+                    {"arrival_time": d["arrival_time"], "wait_time": d["wait_time"]}
+                )
+
         # --- GRAPH GENERATION ---
+
+        # 1. Served vs Rejected Over Time Band Plot
         if time_band_stats:
             bands = list(time_band_stats.keys())
             served_cnt = [time_band_stats[b]["served"] for b in bands]
@@ -447,6 +522,177 @@ class CafeteriaSimulation:
             plt.legend()
             plt.tight_layout()
             plt.savefig(os.path.join(output_dir, "graph_served_vs_rejected.png"))
+            plt.close()
+
+        # 2. Arrivals Plot
+        if self.arrivals_summary_data:
+            bands = [d["time_band"] for d in self.arrivals_summary_data]
+            people = [d["no_of_people"] for d in self.arrivals_summary_data]
+            groups = [d["no_of_groups"] for d in self.arrivals_summary_data]
+
+            x = range(len(bands))
+            plt.figure(figsize=(12, 6))
+            plt.bar(
+                [i - 0.2 for i in x],
+                people,
+                width=0.4,
+                label="No. of People",
+                color="royalblue",
+            )
+            plt.bar(
+                [i + 0.2 for i in x],
+                groups,
+                width=0.4,
+                label="No. of Groups",
+                color="darkorange",
+            )
+            plt.xticks(x, bands, rotation=45, ha="right")
+            plt.ylabel("Count")
+            plt.title("Cafeteria Arrivals per Time Band")
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, "graph_arrivals.png"))
+            plt.close()
+
+        # 3. Queue Length Plot
+        if self.queue_length_data:
+            q_times = [
+                hhmmss_to_seconds(d["time"]) / 3600 for d in self.queue_length_data
+            ]
+            q_lengths = [d["length"] for d in self.queue_length_data]
+
+            plt.figure(figsize=(10, 5))
+            plt.step(q_times, q_lengths, where="post", color="crimson")
+            plt.title("Queue Length Over Time")
+            plt.xlabel("Time of Day (Hours)")
+            plt.ylabel("Number of Groups in Queue")
+            plt.grid(True, linestyle="--", alpha=0.7)
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, "graph_queue_length.png"))
+            plt.close()
+
+        # 4. Group Size Distribution Plot
+        if size_counts:
+            sizes = sorted(list(size_counts.keys()))
+            counts = [size_counts[s] for s in sizes]
+
+            plt.figure(figsize=(8, 5))
+            plt.bar(sizes, counts, color="orchid", edgecolor="black")
+            plt.title("Group Size Distribution")
+            plt.xlabel("Group Size")
+            plt.ylabel("Frequency")
+            plt.xticks(sizes)
+            plt.grid(axis="y", linestyle="--", alpha=0.7)
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, "graph_group_size_distribution.png"))
+            plt.close()
+
+        # 5. Server Stats Plot
+        if self.server_stats:
+            servers = list(self.server_stats.keys())
+            groups_served = [self.server_stats[s]["groups_served"] for s in servers]
+            customers_served = [
+                self.server_stats[s]["customers_served"] for s in servers
+            ]
+
+            x = range(len(servers))
+            plt.figure(figsize=(10, 6))
+            plt.bar(
+                [i - 0.2 for i in x],
+                groups_served,
+                width=0.4,
+                label="Groups Served",
+                color="mediumpurple",
+            )
+            plt.bar(
+                [i + 0.2 for i in x],
+                customers_served,
+                width=0.4,
+                label="Customers Served",
+                color="lightseagreen",
+            )
+            plt.xticks(x, [s.upper() for s in servers])
+            plt.ylabel("Count")
+            plt.title("Server Utilization: Groups & Customers Served")
+            plt.legend()
+            plt.grid(axis="y", linestyle="--", alpha=0.7)
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, "graph_server_stats.png"))
+            plt.close()
+
+        # 6. Graphs per individual counter
+        for sid, data_list in self.service_times_data.items():
+            if data_list:
+                s_times = [hhmmss_to_seconds(d["service_time"]) for d in data_list]
+                plt.figure(figsize=(10, 5))
+                plt.hist(
+                    s_times,
+                    bins=15,
+                    color="mediumseagreen",
+                    edgecolor="black",
+                    alpha=0.7,
+                )
+
+                type_label = "Human" if sid.startswith("h") else "Kiosk"
+                plt.title(
+                    f"Distribution of Service Times - Counter {sid.upper()} ({type_label})"
+                )
+                plt.xlabel("Service Time (Seconds)")
+                plt.ylabel("Frequency")
+                plt.grid(True, linestyle="--", alpha=0.7)
+                plt.tight_layout()
+                plt.savefig(os.path.join(output_dir, f"graph_service_times_{sid}.png"))
+                plt.close()
+
+        # 7. Scatter Plot for In Queue Times Over Time
+        served_data = [d for d in self.customer_data if d["status"] == "Served"]
+        if served_data:
+            arr_times_hours = [
+                hhmmss_to_seconds(d["arrival_time"]) / 3600 for d in served_data
+            ]
+            iq_times_seconds = [
+                hhmmss_to_seconds(d["in_queue_time"]) for d in served_data
+            ]
+
+            plt.figure(figsize=(10, 5))
+            plt.scatter(
+                arr_times_hours,
+                iq_times_seconds,
+                color="dodgerblue",
+                alpha=0.6,
+                edgecolors="black",
+            )
+            plt.title("In-Queue Time vs. Time of Day")
+            plt.xlabel("Time of Day (Hours)")
+            plt.ylabel("In-Queue Time (Seconds)")
+            plt.grid(True, linestyle="--", alpha=0.7)
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, "graph_in_queue_times.png"))
+            plt.close()
+
+        # 8. Scatter Plot for Wait Times Over Time
+        if served_data:
+            arr_times_hours = [
+                hhmmss_to_seconds(d["arrival_time"]) / 3600 for d in served_data
+            ]
+            wait_times_seconds = [
+                hhmmss_to_seconds(d["wait_time"]) for d in served_data
+            ]
+
+            plt.figure(figsize=(10, 5))
+            plt.scatter(
+                arr_times_hours,
+                wait_times_seconds,
+                color="tomato",
+                alpha=0.6,
+                edgecolors="black",
+            )
+            plt.title("Total Wait Time vs. Time of Day")
+            plt.xlabel("Time of Day (Hours)")
+            plt.ylabel("Total Wait Time (Seconds)")
+            plt.grid(True, linestyle="--", alpha=0.7)
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, "graph_wait_times.png"))
             plt.close()
 
 
