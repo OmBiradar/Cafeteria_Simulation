@@ -563,6 +563,7 @@ class CafeteriaSimulation:
 
             plt.figure(figsize=(10, 5))
             plt.step(q_times, q_lengths, where="post", color="crimson")
+            plt.xlim(9, 20)
             plt.title("Queue Length Over Time")
             plt.xlabel("Time of Day (Hours)")
             plt.ylabel("Number of Groups in Queue")
@@ -771,7 +772,7 @@ if __name__ == "__main__":
 
                 sim = CafeteriaSimulation(
                     profile_name=config_name,
-                    arrivals_file="data/avg_day_arrivals.csv",
+                    arrivals_file="/Users/krishnenduchowdhury/Documents/GitHub/Cafeteria_Simulation/python_simulation/data/avg_day_arrivals.csv",
                     profiles_file="config/group_size_profiles.yaml",
                     num_human=human_servers,
                     num_kiosk=kiosk_servers,

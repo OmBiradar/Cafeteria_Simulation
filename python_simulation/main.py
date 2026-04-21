@@ -565,6 +565,9 @@ class CafeteriaSimulation:
                 alpha=0.6,
                 edgecolors="black",
             )
+            start_hour = min(q_times) -0.5
+            end_hour = max(q_times) +0.5
+            plt.xlim(left=start_hour, right=end_hour)
             plt.title("In-Queue Time vs. Time of Day")
             plt.xlabel("Time of Day (Hours)")
             plt.ylabel("In-Queue Time (Seconds)")
